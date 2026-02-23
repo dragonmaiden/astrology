@@ -241,92 +241,117 @@ function aM(tp,np,nm,tLng,nLng){
   return base+'<div class="transit-formula">'+actor+' '+costume+'</div>';
 }
 // ===== DRAW BI-WHEEL =====
+function spreadSlots(slots,minGap){
+  // Multi-pass collision resolver: spread overlapping planets apart
+  slots.sort(function(a,b){return a.lng-b.lng;});
+  for(var pass=0;pass<20;pass++){
+    var moved=false;
+    for(var i=0;i<slots.length;i++){
+      var j=(i+1)%slots.length;
+      var diff=slots[j].dLng-slots[i].dLng;
+      if(diff<0)diff+=360;
+      if(diff<minGap&&diff>0){
+        var push=(minGap-diff)/2+0.5;
+        slots[i].dLng=nn(slots[i].dLng-push);
+        slots[j].dLng=nn(slots[j].dLng+push);
+        moved=true;
+      }
+    }
+    if(!moved)break;
+  }
+  return slots;
+}
 function drawBW(cv,natal,transit,houses,nSpd,tSpd){
   nSpd=nSpd||{};tSpd=tSpd||{};
   var ctx=cv.getContext('2d'),W=cv.width,H=cv.height,cx=W/2,cy=H/2;
-  var RSO=W*.44,RSI=W*.385,RT=W*.335,RHO=W*.285,RN=W*.22,RHI=W*.155,RC=W*.10;
+  var RSO=W*.46,RSI=W*.41,RT=W*.345,RN=W*.24,RHI=W*.16,RC=W*.095;
+  var RTO=RT+24,RTI=RT-24; // transit band edges
+  var RNO=RN+20,RNI=RN-20; // natal band edges
   var asc=houses[0],mc=houses[9],dsc=nn(asc+180),ic=nn(mc+180);
   ctx.clearRect(0,0,W,H);
-  var bg=ctx.createRadialGradient(cx,cy,RC,cx,cy,W*.48+30);bg.addColorStop(0,'#0d0f2b');bg.addColorStop(.5,'#080a1a');bg.addColorStop(1,'rgba(6,6,14,0)');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
-  // Quadrant-based mapping: ASC=180°(left), MC=90°(top), DSC=0°(right), IC=270°(bottom)
-  // Maps ecliptic longitude to canvas angle, interpolating within quadrants
+  var bg=ctx.createRadialGradient(cx,cy,RC,cx,cy,W*.50);bg.addColorStop(0,'#0d0f2b');bg.addColorStop(.5,'#080a1a');bg.addColorStop(1,'rgba(6,6,14,0)');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
   function eclToCanvas(lng){
     lng=nn(lng);
-    // Determine which quadrant this longitude falls in (ecliptic)
-    // Q1: ASC→IC (going forward in zodiac = houses 1,2,3) → canvas 180°→270° (left→bottom)
-    // Q2: IC→DSC (houses 4,5,6) → canvas 270°→360° (bottom→right)
-    // Q3: DSC→MC (houses 7,8,9) → canvas 0°→90° (right→top)
-    // Q4: MC→ASC (houses 10,11,12) → canvas 90°→180° (top→left)
     var d1=nn(ic-asc),d2=nn(dsc-ic),d3=nn(mc-dsc),d4=nn(asc-mc);
     var fromAsc=nn(lng-asc);
-    if(fromAsc<d1){return 180+90*(fromAsc/d1);}// Q1: left→bottom
-    else if(fromAsc<d1+d2){return 270+90*((fromAsc-d1)/d2);}// Q2: bottom→right
-    else if(fromAsc<d1+d2+d3){return 0+90*((fromAsc-d1-d2)/d3);}// Q3: right→top
-    else{return 90+90*((fromAsc-d1-d2-d3)/d4);}// Q4: top→left
+    if(fromAsc<d1){return 180+90*(fromAsc/d1);}
+    else if(fromAsc<d1+d2){return 270+90*((fromAsc-d1)/d2);}
+    else if(fromAsc<d1+d2+d3){return 0+90*((fromAsc-d1-d2)/d3);}
+    else{return 90+90*((fromAsc-d1-d2-d3)/d4);}
   }
   function xy(deg,r){var a=eclToCanvas(deg)*Dg;return[cx+r*Math.cos(a),cy-r*Math.sin(a)];}
   function circ(r,c,w){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke();}
-  // Sign band
+  // Sign band (outer zodiac ring)
   for(var i=0;i<12;i++){
     var sS=i*30,sE=(i+1)*30,steps=24;
     ctx.beginPath();
     for(var s=0;s<=steps;s++){var lng=nn(sS+(sE-sS)*s/steps),ca=eclToCanvas(lng)*Dg;var ox=cx+RSO*Math.cos(ca),oy=cy-RSO*Math.sin(ca);s===0?ctx.moveTo(ox,oy):ctx.lineTo(ox,oy);}
     for(var s=steps;s>=0;s--){var lng=nn(sS+(sE-sS)*s/steps),ca=eclToCanvas(lng)*Dg;var ix=cx+RSI*Math.cos(ca),iy=cy-RSI*Math.sin(ca);ctx.lineTo(ix,iy);}
-    ctx.closePath();ctx.fillStyle=EB[EL[i]];ctx.fill();ctx.strokeStyle='rgba(212,165,74,.15)';ctx.lineWidth=1;ctx.stroke();
-    var p=xy(i*30+15,(RSO+RSI)/2);ctx.font='bold 40px serif';ctx.fillStyle=EC[EL[i]];ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(SG[i],p[0],p[1]);
-    var p2=xy(i*30+15,(RSO+RSI)/2+22);ctx.font='bold 12px "Space Mono",monospace';ctx.fillStyle=EC[EL[i]];ctx.fillText(SIGNS[i].substring(0,3).toUpperCase(),p2[0],p2[1]);
+    ctx.closePath();ctx.fillStyle=EB[EL[i]];ctx.fill();ctx.strokeStyle='rgba(212,165,74,.12)';ctx.lineWidth=1;ctx.stroke();
+    // Sign glyph only (no text abbreviation)
+    var p=xy(i*30+15,(RSO+RSI)/2);ctx.font='bold 36px serif';ctx.fillStyle=EC[EL[i]];ctx.globalAlpha=.85;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(SG[i],p[0],p[1]);ctx.globalAlpha=1;
   }
-  circ(RSO,'rgba(212,165,74,.4)',2.5);circ(RSI,'rgba(212,165,74,.3)',2);circ(RHO,'rgba(123,104,238,.25)',1.5);circ(RC,'rgba(212,165,74,.2)',1.5);
-  ctx.beginPath();ctx.arc(cx,cy,RT,0,Math.PI*2);ctx.strokeStyle='rgba(255,107,53,.12)';ctx.lineWidth=55;ctx.stroke();
-  circ(RT+27.5,'rgba(255,107,53,.25)',1);circ(RT-27.5,'rgba(255,107,53,.25)',1);
-  ctx.beginPath();ctx.arc(cx,cy,RN,0,Math.PI*2);ctx.strokeStyle='rgba(123,104,238,.10)';ctx.lineWidth=45;ctx.stroke();
-  circ(RN+22.5,'rgba(123,104,238,.25)',1);circ(RN-22.5,'rgba(123,104,238,.25)',1);
-  ctx.save();ctx.font='bold 13px "Space Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
-  // Place labels at fixed canvas positions (top-left area)
-  var tlAng=135*Dg;ctx.fillStyle='rgba(255,107,53,.7)';ctx.fillText('◀ TRANSIT (LIVE) ▶',cx+RT*Math.cos(tlAng),cy-RT*Math.sin(tlAng));
-  var nlAng=135*Dg;ctx.fillStyle='rgba(123,104,238,.7)';ctx.fillText('◀ NATAL (BIRTH) ▶',cx+RN*Math.cos(nlAng),cy-RN*Math.sin(nlAng));
-  ctx.restore();
+  // Ring outlines
+  circ(RSO,'rgba(212,165,74,.35)',2);circ(RSI,'rgba(212,165,74,.25)',1.5);
+  // Transit ring band
+  ctx.beginPath();ctx.arc(cx,cy,RT,0,Math.PI*2);ctx.strokeStyle='rgba(255,107,53,.08)';ctx.lineWidth=48;ctx.stroke();
+  circ(RTO,'rgba(255,107,53,.18)',1);circ(RTI,'rgba(255,107,53,.18)',1);
+  // Natal ring band
+  ctx.beginPath();ctx.arc(cx,cy,RN,0,Math.PI*2);ctx.strokeStyle='rgba(123,104,238,.07)';ctx.lineWidth=40;ctx.stroke();
+  circ(RNO,'rgba(123,104,238,.18)',1);circ(RNI,'rgba(123,104,238,.18)',1);
+  // House boundary ring
+  circ(RC,'rgba(212,165,74,.15)',1);
   // House lines
   for(var i=0;i<12;i++){
     var deg=houses[i],p1=xy(deg,RC),p2=xy(deg,RSI);var isA=(i===0||i===3||i===6||i===9);
-    ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.strokeStyle=isA?'rgba(212,165,74,.7)':'rgba(123,104,238,.2)';ctx.lineWidth=isA?3:1;ctx.stroke();
+    ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.strokeStyle=isA?'rgba(212,165,74,.6)':'rgba(123,104,238,.15)';ctx.lineWidth=isA?2.5:1;ctx.stroke();
+    // House number only (no text label to reduce clutter)
     var next=houses[(i+1)%12];var diff=next-deg;if(diff<0)diff+=360;var mid=nn(deg+diff/2);
-    var hp=xy(mid,RHI);ctx.font='bold 28px "Cinzel",serif';ctx.fillStyle='rgba(212,165,74,.55)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),hp[0],hp[1]);
-    var lp=xy(mid,RHI+28);ctx.font='bold 10px "Space Mono",monospace';ctx.fillStyle='rgba(192,200,224,.35)';ctx.fillText(HN[i].split('&')[0].trim(),lp[0],lp[1]);
+    var hp=xy(mid,RHI);ctx.font='bold 24px "Cinzel",serif';ctx.fillStyle='rgba(212,165,74,.45)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),hp[0],hp[1]);
   }
+  // Angle labels (ASC/IC/DSC/MC)
   var labels=[['ASC',houses[0]],['IC',houses[3]],['DSC',houses[6]],['MC',houses[9]]];
-  for(var j=0;j<labels.length;j++){var lp=xy(labels[j][1],RSO+32);ctx.font='bold 18px "Space Mono",monospace';ctx.fillStyle='#d4a54a';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[j][0],lp[0],lp[1]);}
-  // Aspects (togglable)
+  for(var j=0;j<labels.length;j++){var lp=xy(labels[j][1],RSO+28);ctx.font='bold 16px "Space Mono",monospace';ctx.fillStyle='#d4a54a';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[j][0],lp[0],lp[1]);}
+  // Aspects (togglable) — draw before planets so planets sit on top
   var showAspects=document.getElementById('aspectToggle')&&document.getElementById('aspectToggle').checked;
   var aspects=findA(transit,natal);
-  if(showAspects){for(var j=0;j<Math.min(aspects.length,15);j++){var a=aspects[j];var p1=xy(a.tD,RT),p2=xy(a.nD,RN);var al=.06+.16*a.ex;var cols={Conjunction:'rgba(255,215,0,'+al+')',Opposition:'rgba(255,70,70,'+al+')',Trine:'rgba(70,200,130,'+al+')',Square:'rgba(255,70,70,'+al+')',Sextile:'rgba(100,149,237,'+al+')'};ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.strokeStyle=cols[a.asp.nm]||'rgba(255,255,255,'+al+')';ctx.lineWidth=a.asp.pw==='major'?1.5:.8;if(a.asp.nm==='Square'||a.asp.nm==='Opposition')ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);}}
-  // Natal planets
-  var nSlots=Object.keys(natal).map(function(nm){return{nm:nm,lng:natal[nm],dLng:natal[nm]};}).sort(function(a,b){return a.lng-b.lng;});
-  for(var i=1;i<nSlots.length;i++){var diff=nSlots[i].dLng-nSlots[i-1].dLng;if(diff<0)diff+=360;if(diff<9)nSlots[i].dLng=nn(nSlots[i-1].dLng+9);}
+  if(showAspects){for(var j=0;j<Math.min(aspects.length,12);j++){var a=aspects[j];var p1=xy(a.tD,RTI-2),p2=xy(a.nD,RNO+2);var al=.05+.15*a.ex;var cols={Conjunction:'rgba(255,215,0,'+al+')',Opposition:'rgba(255,70,70,'+al+')',Trine:'rgba(70,200,130,'+al+')',Square:'rgba(255,70,70,'+al+')',Sextile:'rgba(100,149,237,'+al+')'};ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.strokeStyle=cols[a.asp.nm]||'rgba(255,255,255,'+al+')';ctx.lineWidth=a.asp.pw==='major'?1.5:.8;if(a.asp.nm==='Square'||a.asp.nm==='Opposition')ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);}}
+  // Natal planets — glyph only, tooltip-style degree on hover (canvas has no hover, so show small degree)
+  var nSlots=Object.keys(natal).map(function(nm){return{nm:nm,lng:natal[nm],dLng:natal[nm]};});
+  spreadSlots(nSlots,14);
   for(var i=0;i<nSlots.length;i++){
-    var p=nSlots[i],pp=xy(p.dLng,RN);
-    ctx.beginPath();ctx.arc(pp[0],pp[1],26,0,Math.PI*2);ctx.fillStyle=(NC[p.nm]||'#fff')+'30';ctx.fill();ctx.strokeStyle=(NC[p.nm]||'#fff')+'90';ctx.lineWidth=2;ctx.stroke();
-    ctx.font='bold 30px serif';ctx.fillStyle=NC[p.nm]||'#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(PG[p.nm]||'?',pp[0],pp[1]-1);
+    var p=nSlots[i],pp=xy(p.dLng,RN),col=NC[p.nm]||'#fff';
     var rx=(nSpd[p.nm]||0)<0;var df=fDg(p.lng);
-    var lp=xy(p.dLng,RN-30);ctx.font='bold 11px "Space Mono",monospace';ctx.fillStyle=NC[p.nm]||'#fff';ctx.fillText(p.nm.toUpperCase()+' '+df.deg+'°'+(rx?' ℞':''),lp[0],lp[1]);
-    var t1=xy(p.lng,RHO),t2=xy(p.lng,RHO+8);ctx.beginPath();ctx.moveTo(t1[0],t1[1]);ctx.lineTo(t2[0],t2[1]);ctx.strokeStyle=(NC[p.nm]||'#fff')+'60';ctx.lineWidth=2;ctx.stroke();
+    // Circle
+    ctx.beginPath();ctx.arc(pp[0],pp[1],20,0,Math.PI*2);ctx.fillStyle=col+'25';ctx.fill();ctx.strokeStyle=col+'70';ctx.lineWidth=1.5;ctx.stroke();
+    // Glyph
+    ctx.font='bold 24px serif';ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(PG[p.nm]||'?',pp[0],pp[1]);
+    // Degree label (small, below)
+    ctx.font='9px "Space Mono",monospace';ctx.fillStyle=col+'AA';ctx.fillText(df.deg+'°'+df.glyph+(rx?' R':''),pp[0],pp[1]+17);
+    // Tick mark at true position
+    var t1=xy(p.lng,RNO),t2=xy(p.lng,RNO+6);ctx.beginPath();ctx.moveTo(t1[0],t1[1]);ctx.lineTo(t2[0],t2[1]);ctx.strokeStyle=col+'50';ctx.lineWidth=1.5;ctx.stroke();
   }
   // Transit planets
-  var tSlots=Object.keys(transit).map(function(nm){return{nm:nm,lng:transit[nm],dLng:transit[nm]};}).sort(function(a,b){return a.lng-b.lng;});
-  for(var i=1;i<tSlots.length;i++){var diff=tSlots[i].dLng-tSlots[i-1].dLng;if(diff<0)diff+=360;if(diff<9)tSlots[i].dLng=nn(tSlots[i-1].dLng+9);}
+  var tSlots=Object.keys(transit).map(function(nm){return{nm:nm,lng:transit[nm],dLng:transit[nm]};});
+  spreadSlots(tSlots,14);
   for(var i=0;i<tSlots.length;i++){
-    var p=tSlots[i],pp=xy(p.dLng,RT);
-    var glow=ctx.createRadialGradient(pp[0],pp[1],0,pp[0],pp[1],28);glow.addColorStop(0,(TC[p.nm]||'#fff')+'40');glow.addColorStop(1,'transparent');ctx.fillStyle=glow;ctx.fillRect(pp[0]-28,pp[1]-28,56,56);
-    ctx.beginPath();ctx.arc(pp[0],pp[1],24,0,Math.PI*2);ctx.fillStyle=(TC[p.nm]||'#fff')+'20';ctx.fill();ctx.strokeStyle=(TC[p.nm]||'#fff')+'80';ctx.lineWidth=2;ctx.stroke();
-    ctx.font='bold 28px serif';ctx.fillStyle=TC[p.nm]||'#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(PG[p.nm]||'?',pp[0],pp[1]-1);
+    var p=tSlots[i],pp=xy(p.dLng,RT),col=TC[p.nm]||'#fff';
     var rx=(tSpd[p.nm]||0)<0;var df=fDg(p.lng);
-    var lp=xy(p.dLng,RT+28);ctx.font='bold 11px "Space Mono",monospace';ctx.fillStyle=TC[p.nm]||'#fff';ctx.fillText(p.nm.toUpperCase()+' '+df.deg+'°'+(rx?' ℞':''),lp[0],lp[1]);
-    var t1=xy(p.lng,RSI),t2=xy(p.lng,RSI-8);ctx.beginPath();ctx.moveTo(t1[0],t1[1]);ctx.lineTo(t2[0],t2[1]);ctx.strokeStyle=(TC[p.nm]||'#fff')+'60';ctx.lineWidth=2;ctx.stroke();
+    // Soft glow
+    var glow=ctx.createRadialGradient(pp[0],pp[1],0,pp[0],pp[1],22);glow.addColorStop(0,col+'30');glow.addColorStop(1,'transparent');ctx.fillStyle=glow;ctx.fillRect(pp[0]-22,pp[1]-22,44,44);
+    // Circle
+    ctx.beginPath();ctx.arc(pp[0],pp[1],18,0,Math.PI*2);ctx.fillStyle=col+'18';ctx.fill();ctx.strokeStyle=col+'70';ctx.lineWidth=1.5;ctx.stroke();
+    // Glyph
+    ctx.font='bold 22px serif';ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(PG[p.nm]||'?',pp[0],pp[1]);
+    // Degree label (small, outside)
+    ctx.font='9px "Space Mono",monospace';ctx.fillStyle=col+'AA';ctx.fillText(df.deg+'°'+df.glyph+(rx?' R':''),pp[0],pp[1]-16);
+    // Tick mark at true position
+    var t1=xy(p.lng,RSI),t2=xy(p.lng,RSI-6);ctx.beginPath();ctx.moveTo(t1[0],t1[1]);ctx.lineTo(t2[0],t2[1]);ctx.strokeStyle=col+'50';ctx.lineWidth=1.5;ctx.stroke();
   }
   // Center
   var cg=ctx.createRadialGradient(cx,cy,0,cx,cy,RC);cg.addColorStop(0,'#0d0f2b');cg.addColorStop(1,'rgba(6,6,14,.9)');ctx.fillStyle=cg;ctx.beginPath();ctx.arc(cx,cy,RC,0,Math.PI*2);ctx.fill();
-  ctx.font='bold 14px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.8)';ctx.textAlign='center';ctx.fillText('NATAL × TRANSIT',cx,cy-8);
-  ctx.font='11px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.5)';ctx.fillText('PLACIDUS',cx,cy+10);
+  ctx.font='bold 13px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.7)';ctx.textAlign='center';ctx.fillText('NATAL × TRANSIT',cx,cy-6);
+  ctx.font='10px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.4)';ctx.fillText('PLACIDUS',cx,cy+10);
 }
 // ===== ORRERY =====
 function drawOrr(cv,date){
