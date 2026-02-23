@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CELESTIAL TRANSIT — Live Bi-Wheel Astrology (Swiss Ephemeris)</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--void:#06060e;--deep:#0a0a1a;--gold:#d4a54a;--gold-light:#f0d080;--gold-dim:#8a6a2a;--silver:#c0c8e0;--silver-dim:#6a7090;--fire:#e8524a;--water:#4a8ae8;--earth:#4aad6a;--air:#e0d04a;--transit-glow:#ff6b35;--natal-glow:#7b68ee;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--void);color:var(--silver);font-family:'Cormorant Garamond',serif;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:radial-gradient(1px 1px at 10% 20%,rgba(255,255,255,.5),transparent),radial-gradient(1px 1px at 30% 60%,rgba(255,255,255,.3),transparent),radial-gradient(1.5px 1.5px at 50% 10%,rgba(255,255,255,.6),transparent),radial-gradient(1px 1px at 70% 40%,rgba(255,255,255,.3),transparent),radial-gradient(1px 1px at 90% 80%,rgba(255,255,255,.4),transparent),radial-gradient(ellipse at 20% 50%,rgba(42,26,78,.3),transparent 60%),radial-gradient(ellipse at 80% 30%,rgba(26,42,94,.2),transparent 50%);pointer-events:none;z-index:0;}
+.hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;z-index:1;}
+.hero-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(212,165,74,.08) 0%,transparent 70%);animation:pg 8s ease-in-out infinite;pointer-events:none;z-index:-1;}
+@keyframes pg{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.15);opacity:1}}
+.hero-eyebrow{font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.4em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1.5rem;animation:fd 1s ease-out .2s both;}
+.hero h1{font-family:'Cinzel',serif;font-weight:900;font-size:clamp(2.5rem,7vw,5.5rem);color:var(--gold);line-height:1.1;letter-spacing:.06em;text-shadow:0 0 60px rgba(212,165,74,.3);animation:fd 1s ease-out .4s both;}
+.hero h1 span{display:block;font-size:.4em;font-weight:400;color:var(--silver);letter-spacing:.15em;margin-top:.5rem;text-shadow:none;}
+.hero-desc{max-width:600px;font-size:1.15rem;line-height:1.8;color:var(--silver-dim);margin-top:2rem;font-style:italic;animation:fd 1s ease-out .6s both;}
+@keyframes fd{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.birth-form{margin-top:3rem;display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;align-items:end;animation:fd 1s ease-out .8s both;position:relative;z-index:10;}
+.form-group{display:flex;flex-direction:column;gap:.4rem;}
+.form-group label{font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim);}
+.form-group input{background:rgba(255,255,255,.04);border:1px solid rgba(212,165,74,.2);color:var(--silver);font-family:'Space Mono',monospace;font-size:.85rem;padding:.7rem 1rem;border-radius:4px;outline:none;transition:all .3s;min-width:160px;}
+.form-group input:focus{border-color:var(--gold);box-shadow:0 0 20px rgba(212,165,74,.15);}
+.city-dropdown{position:absolute;top:100%;left:0;right:0;background:rgba(10,10,26,.98);border:1px solid rgba(212,165,74,.3);border-top:none;border-radius:0 0 6px 6px;max-height:220px;overflow-y:auto;z-index:9999;display:none;}
+.city-dropdown.open{display:block;}
+.city-option{padding:.6rem .8rem;font-family:'Space Mono',monospace;font-size:.78rem;color:var(--silver);cursor:pointer;transition:background .15s;border-bottom:1px solid rgba(255,255,255,.03);}
+.city-option:hover,.city-option.highlighted{background:rgba(212,165,74,.15);color:var(--gold-light);}
+.city-option .city-country{color:var(--silver-dim);font-size:.65rem;margin-left:.3rem;}
+.coord-badge{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--gold-dim);padding:.7rem 1rem;background:rgba(212,165,74,.05);border:1px solid rgba(212,165,74,.12);border-radius:4px;white-space:nowrap;text-align:center;}
+.city-loading{padding:.6rem;font-family:'Space Mono',monospace;font-size:.7rem;color:var(--gold-dim);text-align:center;}
+.btn-generate{font-family:'Cinzel',serif;font-weight:700;font-size:.9rem;letter-spacing:.1em;padding:.7rem 2.5rem;background:linear-gradient(135deg,var(--gold-dim),var(--gold));color:var(--void);border:none;border-radius:4px;cursor:pointer;transition:all .3s;text-transform:uppercase;}
+.btn-generate:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(212,165,74,.3);}
+.btn-generate:disabled{opacity:.5;cursor:wait;}
+.loading-msg{font-family:'Space Mono',monospace;font-size:.75rem;color:var(--transit-glow);margin-top:1rem;animation:fd .5s ease-out;}
+.planet-kw{display:block;font-size:.55rem;color:var(--silver-dim);font-family:'Space Mono',monospace;margin-top:2px;letter-spacing:.02em;opacity:.7;}
+.sign-kw{display:block;font-size:.55rem;color:var(--silver-dim);font-family:'Space Mono',monospace;margin-top:2px;letter-spacing:.02em;opacity:.6;font-style:italic;}
+.room-tags{font-size:.55rem;color:var(--silver-dim);font-family:'Space Mono',monospace;margin-top:4px;line-height:1.4;opacity:.6;letter-spacing:.01em;}
+.drive-tag{display:inline-block;font-size:.6rem;font-family:'Space Mono',monospace;padding:2px 6px;border-radius:3px;margin:2px 3px 2px 0;letter-spacing:.01em;}
+.drive-tag.t{background:rgba(255,107,53,.1);color:var(--transit-glow);border:1px solid rgba(255,107,53,.2);}
+.drive-tag.n{background:rgba(123,104,238,.1);color:#a090ff;border:1px solid rgba(123,104,238,.2);}
+.transit-drives{margin:6px 0;display:flex;flex-wrap:wrap;gap:2px;}
+.transit-formula{margin-top:6px;font-size:.65rem;color:var(--gold);opacity:.7;font-style:italic;border-top:1px solid rgba(212,165,74,.1);padding-top:4px;}
+.rx{font-size:.6rem;color:#FF6347;font-weight:bold;vertical-align:super;}
+.toggle-label{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:.75rem;color:var(--silver);}
+.toggle-label input{accent-color:var(--transit-glow);width:14px;height:14px;}
+.toggle-text{font-family:'Space Mono',monospace;}
+.main-content{position:relative;z-index:1;max-width:1500px;margin:0 auto;padding:2rem;display:none;}
+.main-content.visible{display:block;animation:fd .8s ease-out;}
+.live-clock{display:flex;justify-content:space-between;align-items:center;padding:1rem 2rem;background:rgba(255,255,255,.02);border:1px solid rgba(212,165,74,.1);border-radius:8px;margin-bottom:2rem;flex-wrap:wrap;gap:1rem;}
+.clock-label{font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.3em;text-transform:uppercase;color:var(--gold-dim);}
+.clock-time{font-family:'Space Mono',monospace;font-size:1rem;color:var(--gold-light);}
+.live-dot{display:inline-block;width:6px;height:6px;background:var(--transit-glow);border-radius:50%;margin-right:8px;animation:bl 1.5s ease-in-out infinite;}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.2}}
+.section-title{font-family:'Cinzel',serif;font-size:1.3rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;text-align:center;margin-bottom:.5rem;}
+.section-subtitle{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--silver-dim);text-align:center;margin-bottom:2rem;font-style:italic;}
+.biwheel-wrap{display:flex;justify-content:center;margin-bottom:3rem;}
+.chart-canvas-wrap{position:relative;width:100%;max-width:860px;aspect-ratio:1;}
+#biWheelCanvas{width:100%;height:100%;display:block;}
+.legend-bar{display:flex;justify-content:center;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:.5rem;font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.1em;color:var(--silver-dim);text-transform:uppercase;}
+.legend-dot{width:10px;height:10px;border-radius:50%;}.legend-dot.natal{background:var(--natal-glow);}.legend-dot.transit{background:var(--transit-glow);}
+.tables-row{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:3rem;}
+@media(max-width:800px){.tables-row{grid-template-columns:1fr;}}
+.panel-card{background:rgba(255,255,255,.02);border:1px solid rgba(212,165,74,.1);border-radius:8px;padding:1.5rem;}
+.panel-card h3{font-family:'Cinzel',serif;font-size:.85rem;letter-spacing:.15em;color:var(--gold);text-transform:uppercase;margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid rgba(212,165,74,.1);}
+.planet-row{display:flex;align-items:center;justify-content:space-between;padding:.55rem 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:.95rem;}
+.planet-row:last-child{border-bottom:none;}
+.planet-symbol{font-size:1.3rem;width:32px;text-align:center;}
+.planet-name{flex:1;margin-left:.5rem;}
+.planet-sign{font-family:'Space Mono',monospace;font-size:.78rem;color:var(--gold-light);min-width:110px;text-align:right;}
+.planet-degree{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--silver-dim);min-width:60px;text-align:right;}
+.orrery-wrap{display:flex;justify-content:center;margin-bottom:3rem;}
+.orrery-canvas-wrap{position:relative;width:100%;max-width:720px;aspect-ratio:1;}
+#orreryCanvas{width:100%;height:100%;display:block;}
+.mansion-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:3rem;}
+@media(max-width:800px){.mansion-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:500px){.mansion-grid{grid-template-columns:1fr;}}
+.room-card{background:rgba(255,255,255,.015);border:1px solid rgba(255,255,255,.05);border-radius:8px;padding:1.2rem;text-align:center;transition:all .4s;min-height:140px;}
+.room-card.active{border-color:rgba(255,107,53,.4);background:rgba(255,107,53,.04);box-shadow:0 0 30px rgba(255,107,53,.08);}
+.room-number{font-family:'Cinzel',serif;font-size:1.8rem;font-weight:900;color:var(--gold-dim);opacity:.4;}
+.room-card.active .room-number{color:var(--transit-glow);opacity:1;}
+.room-name{font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--silver-dim);margin-top:.3rem;}
+.room-guests{margin-top:.8rem;font-size:1.4rem;min-height:1.6rem;}
+.room-guest-label{font-family:'Space Mono',monospace;font-size:.6rem;color:var(--transit-glow);letter-spacing:.1em;}
+.transit-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.2rem;margin-bottom:3rem;}
+.transit-card{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:1.3rem;position:relative;overflow:hidden;transition:all .4s;}
+.transit-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;}
+.transit-card.fire::before{background:var(--fire);}.transit-card.water::before{background:var(--water);}
+.transit-card.earth::before{background:var(--earth);}.transit-card.air::before{background:var(--air);}
+.transit-card.major::before{background:var(--transit-glow);width:4px;}
+.transit-card:hover{transform:translateY(-3px);border-color:rgba(212,165,74,.2);box-shadow:0 8px 30px rgba(0,0,0,.3);}
+.transit-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;flex-wrap:wrap;gap:.5rem;}
+.transit-aspect{font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;padding:.2rem .6rem;border-radius:3px;background:rgba(212,165,74,.1);color:var(--gold);}
+.transit-title{font-family:'Cinzel',serif;font-size:.9rem;color:var(--silver);}
+.transit-body{font-size:.9rem;line-height:1.7;color:var(--silver-dim);}
+.transit-house{font-family:'Space Mono',monospace;font-size:.65rem;letter-spacing:.1em;color:var(--gold-dim);margin-top:.6rem;text-transform:uppercase;}
+.engine-badge{font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.1em;color:var(--natal-glow);text-align:center;margin-bottom:1rem;padding:.4rem;background:rgba(123,104,238,.08);border-radius:4px;}
+.site-footer{position:relative;z-index:1;text-align:center;padding:3rem 2rem;border-top:1px solid rgba(212,165,74,.08);font-family:'Space Mono',monospace;font-size:.6rem;letter-spacing:.2em;color:var(--silver-dim);}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--void)}::-webkit-scrollbar-thumb{background:var(--gold-dim);border-radius:3px}
+</style>
+</head>
+<body>
+<section class="hero" id="hero">
+<div class="hero-glow"></div>
+<div class="hero-eyebrow">Swiss Ephemeris · NASA JPL DE431 Precision</div>
+<h1>CELESTIAL TRANSIT<span>Your Frozen Blueprint × The Living Sky</span></h1>
+<p class="hero-desc">Powered by the Swiss Ephemeris (WebAssembly) — the same engine used by professional astrologers worldwide. Sub-arcsecond planetary precision with Placidus houses.</p>
+<div class="birth-form">
+<div class="form-group"><label>Birth Date</label><input type="date" id="birthDate" value="1993-08-23"></div>
+<div class="form-group"><label>Birth Time</label><input type="time" id="birthTime" value="12:00"></div>
+<div class="form-group" style="position:relative"><label>Birth City</label><input type="text" id="birthCity" value="Singapore" placeholder="e.g. Tokyo" autocomplete="off"><div class="city-dropdown" id="cityDropdown"></div></div>
+<input type="hidden" id="birthLat" value="1.3521"><input type="hidden" id="birthLon" value="103.8198">
+<div class="form-group"><label>Coordinates</label><div class="coord-badge" id="coordBadge">1.35°N, 103.82°E</div></div>
+<button class="btn-generate" id="btnGenerate">Cast Your Chart</button>
+</div>
+<div id="loadingMsg"></div>
+</section>
+<section class="main-content" id="mainContent">
+<div class="live-clock">
+<div><span class="clock-label">Your Blueprint</span><br><span class="clock-time" id="natalDate"></span></div>
+<div style="text-align:center"><span class="clock-label"><span class="live-dot"></span>Live Sky</span><br><span class="clock-time" id="liveTime"></span></div>
+<div style="text-align:right"><span class="clock-label">Sidereal Time</span><br><span class="clock-time" id="siderealTime">—</span></div>
+</div>
+<div class="engine-badge">⚡ SWISS EPHEMERIS (Moshier/DE404) · PLACIDUS HOUSES · SUB-ARCSECOND PRECISION</div>
+<div class="section-title">BI-WHEEL — Your Natal Chart × Live Transits</div>
+<div class="section-subtitle">Inner ring (purple) = your frozen natal blueprint · Outer ring (orange) = today's moving sky</div>
+<div class="legend-bar"><div class="legend-item"><div class="legend-dot natal"></div>Natal Planets (Inner)</div><div class="legend-item"><div class="legend-dot transit"></div>Transit Planets (Outer)</div><div class="legend-item"><label class="toggle-label"><input type="checkbox" id="aspectToggle" checked><span class="toggle-text">Aspect Lines</span></label></div></div>
+<div class="biwheel-wrap"><div class="chart-canvas-wrap"><canvas id="biWheelCanvas" width="1700" height="1700"></canvas></div></div>
+<div class="tables-row">
+<div class="panel-card"><h3>🪐 Current Transit Positions (Live Sky)</h3><div id="transitList"></div></div>
+<div class="panel-card"><h3>⭐ Your Natal Positions (Frozen Blueprint)</h3><div id="natalList"></div></div>
+</div>
+<div class="section-title">Live Solar System — Real Planetary Positions Now</div>
+<div class="section-subtitle">Top-down heliocentric view showing where every planet physically is right now</div>
+<div class="orrery-wrap"><div class="orrery-canvas-wrap"><canvas id="orreryCanvas" width="1440" height="1440"></canvas></div></div>
+<div class="section-title">The 12-Room Mansion</div>
+<div class="section-subtitle">Current planetary guests walking through your rooms right now</div>
+<div class="mansion-grid" id="mansionGrid"></div>
+<div class="section-title">Active Transit Aspects</div>
+<div class="section-subtitle">When moving planets trigger your natal blueprint</div>
+<div class="transit-grid" id="transitGrid"></div>
+</section>
+<footer class="site-footer">CELESTIAL TRANSIT — SWISS EPHEMERIS (MOSHIER/DE404) VIA WEBASSEMBLY<br>Sub-arcsecond precision · Placidus house system · Based on NASA JPL planetary theories</footer>
+<script type="module">
+import SwissEph from 'https://cdn.jsdelivr.net/gh/prolaxu/swisseph-wasm@main/src/swisseph.js';
+
+// Constants
+const SIGNS=['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+const SG=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+const EL=['fire','earth','air','water','fire','earth','air','water','fire','earth','air','water'];
+const EC={fire:'#e8524a',earth:'#4aad6a',air:'#e0d04a',water:'#4a8ae8'};
+const EB={fire:'rgba(232,82,74,.12)',earth:'rgba(74,173,106,.12)',air:'rgba(224,208,74,.12)',water:'rgba(74,138,232,.12)'};
+const PG={Sun:'☉',Moon:'☽',Mercury:'☿',Venus:'♀',Mars:'♂',Jupiter:'♃',Saturn:'♄',Uranus:'♅',Neptune:'♆',Pluto:'♇',NNode:'☊',SNode:'☋'};
+const NC={Sun:'#FFE030',Moon:'#E0E0FF',Mercury:'#90EE90',Venus:'#FF69B4',Mars:'#FF4444',Jupiter:'#CD853F',Saturn:'#A0A0A0',Uranus:'#00CED1',Neptune:'#6495ED',Pluto:'#BA55D3',NNode:'#C8A2C8',SNode:'#8B7D8B'};
+const TC={Sun:'#FFAA00',Moon:'#F0F0FF',Mercury:'#98FB98',Venus:'#FF1493',Mars:'#FF6347',Jupiter:'#DEB887',Saturn:'#D0D0D0',Uranus:'#00FFFF',Neptune:'#7B9EFF',Pluto:'#DA70D6',NNode:'#DDA0DD',SNode:'#A0A0A0'};
+const HN=['Self & Appearance','Money & Possessions','Communication & Siblings','Home & Family','Romance & Creativity','Health & Daily Work','Partnerships & Marriage','Shared Resources & Rebirth','Higher Learning & Travel','Career & Public Image','Friends & Wishes','Subconscious & Karma'];
+// Extended house descriptors for mansion cards
+const HX=['Identity · Personal Brand · Physical Body · First Impressions','Liquid Assets · Self-Worth · Earning Capacity · Values','Daily Comms · Local Networks · Writing · Skills · Siblings','Real Estate · Emotional Roots · Private Life · Family Lineage','Risk & Investing · Creativity · Romance · Brainchildren · Joy','Daily Routines · Physical Health · The Grind · Employees','1-on-1 Contracts · B2B Deals · Marriage · Open Rivals','Investors · Taxes · Intimacy · Psychological Depths · Inheritance','Publishing · Global Travel · Philosophy · Higher Education','Career Peak · Public Legacy · Authority · Reputation · Status','Mass Networks · The Internet · Communities · Gains from Career','Isolation · Hidden Enemies · Mental Health · Rest · Surrender'];
+// Planet drive keywords
+const PK={Sun:'Ego · Identity · Vitality · Leadership · Conscious Focus',Moon:'Subconscious · Emotional Reflexes · Private Needs · Intuition',Mercury:'Intellect · Communication · Data Processing · Commerce',Venus:'Values · Aesthetics · Attraction · Relationships · Finances',Mars:'Drive · Ambition · Friction · Physical Energy · Execution',Jupiter:'Expansion · Luck · Leverage · Massive Growth · Learning',Saturn:'Restriction · Boundaries · Discipline · Auditing · Reality Checks',Uranus:'Innovation · Sudden Disruption · Rebellion · Visionary Genius',Neptune:'Illusion · Boundary-Dissolution · Deep Empathy · Dreams',Pluto:'Deep Transformation · Power Dynamics · Rebirth · Hidden Wealth',NNode:'Evolutionary Destiny · Uncharted Growth · Future Mission',SNode:'Past-Life Mastery · Comfort Zone · Ancient Wisdom'};
+// Zodiac sign personality keywords
+const ZK={Aries:'Independent · Pioneering · Impulsive · Martial',Taurus:'Grounded · Patient · Luxurious · Slow-Building',Gemini:'Curious · Adaptable · Communicative · Data-Gathering',Cancer:'Protective · Nurturing · Emotionally Driven · Security-Focused',Leo:'Charismatic · Proud · Creative · Performative · Legacy-Driven',Virgo:'Analytical · Perfectionist · Service-Oriented · Organized',Libra:'Diplomatic · Aesthetic · Partnership-Focused · Strategic',Scorpio:'Intense · Strategic · Psychological · Private · Perceptive',Sagittarius:'Philosophical · Blunt · Adventurous · Visionary',Capricorn:'Disciplined · Authoritative · Structured · CEO-Energy',Aquarius:'Eccentric · Futuristic · Network-Oriented · Detached',Pisces:'Fluid · Empathetic · Boundaryless · Intuitive'};
+const BODIES={Sun:0,Moon:1,Mercury:2,Venus:3,Mars:4,Jupiter:5,Saturn:6,Uranus:7,Neptune:8,Pluto:9,NNode:11};
+const Dg=Math.PI/180;
+const FLAGS=4|256; // SEFLG_MOSEPH | SEFLG_SPEED
+// Orbital semi-major axes for orrery (AU)
+const SEMI_A={Mercury:.387,Venus:.723,Earth:1.0,Mars:1.524,Jupiter:5.203,Saturn:9.537,Uranus:19.19,Neptune:30.07,Pluto:39.48};
+
+// Cities
+const CITIES=[["Singapore","Singapore",1.3521,103.8198],["Tokyo","Japan",35.6762,139.6503],["Osaka","Japan",34.6937,135.5023],["Seoul","South Korea",37.5665,126.978],["Beijing","China",39.9042,116.4074],["Shanghai","China",31.2304,121.4737],["Hong Kong","China",22.3193,114.1694],["Taipei","Taiwan",25.033,121.5654],["Bangkok","Thailand",13.7563,100.5018],["Kuala Lumpur","Malaysia",3.139,101.6869],["Jakarta","Indonesia",-6.2088,106.8456],["Manila","Philippines",14.5995,120.9842],["Mumbai","India",19.076,72.8777],["Delhi","India",28.7041,77.1025],["Dubai","UAE",25.2048,55.2708],["Istanbul","Turkey",41.0082,28.9784],["London","UK",51.5074,-0.1278],["Paris","France",48.8566,2.3522],["Berlin","Germany",52.52,13.405],["Amsterdam","Netherlands",52.3676,4.9041],["Madrid","Spain",40.4168,-3.7038],["Rome","Italy",41.9028,12.4964],["Vienna","Austria",48.2082,16.3738],["Zurich","Switzerland",47.3769,8.5417],["Stockholm","Sweden",59.3293,18.0686],["Athens","Greece",37.9838,23.7275],["Moscow","Russia",55.7558,37.6173],["New York","USA",40.7128,-74.006],["Los Angeles","USA",34.0522,-118.2437],["Chicago","USA",41.8781,-87.6298],["San Francisco","USA",37.7749,-122.4194],["Seattle","USA",47.6062,-122.3321],["Boston","USA",42.3601,-71.0589],["Miami","USA",25.7617,-80.1918],["Toronto","Canada",43.6532,-79.3832],["Vancouver","Canada",49.2827,-123.1207],["Mexico City","Mexico",19.4326,-99.1332],["Sao Paulo","Brazil",-23.5505,-46.6333],["Buenos Aires","Argentina",-34.6037,-58.3816],["Cairo","Egypt",30.0444,31.2357],["Sydney","Australia",-33.8688,151.2093],["Melbourne","Australia",-37.8136,144.9631],["Auckland","New Zealand",-36.8485,174.7633],["Denver","USA",39.7392,-104.9903],["Austin","USA",30.2672,-97.7431],["Dallas","USA",32.7767,-96.797],["Atlanta","USA",33.749,-84.388],["Washington DC","USA",38.9072,-77.0369],["Las Vegas","USA",36.1699,-115.1398],["Honolulu","USA",21.3069,-157.8583],["Dublin","Ireland",53.3498,-6.2603],["Edinburgh","UK",55.9533,-3.1883],["Barcelona","Spain",41.3874,2.1686],["Munich","Germany",48.1351,11.582],["Prague","Czech Republic",50.0755,14.4378],["Budapest","Hungary",47.4979,19.0402],["Lisbon","Portugal",38.7223,-9.1393],["Copenhagen","Denmark",55.6761,12.5683],["Oslo","Norway",59.9139,10.7522],["Helsinki","Finland",60.1699,24.9384],["Bangalore","India",12.9716,77.5946],["Nairobi","Kenya",-1.2921,36.8219],["Cape Town","South Africa",-33.9249,18.4241],["Lima","Peru",-12.0464,-77.0428],["Santiago","Chile",-33.4489,-70.6693]];
+
+// City search
+const cI=document.getElementById('birthCity'),cDD=document.getElementById('cityDropdown'),bLat=document.getElementById('birthLat'),bLon=document.getElementById('birthLon'),cBadge=document.getElementById('coordBadge');
+let hIdx=-1,fCities=[],ddM=false;
+function fCo(la,lo){return Math.abs(la).toFixed(2)+'°'+(la>=0?'N':'S')+', '+Math.abs(lo).toFixed(2)+'°'+(lo>=0?'E':'W');}
+function selC(c){cI.value=c[0]+', '+c[1];bLat.value=c[2];bLon.value=c[3];cBadge.textContent=fCo(c[2],c[3]);cDD.classList.remove('open');cDD.innerHTML='';hIdx=-1;}
+function rDD(){cDD.innerHTML='';if(!fCities.length){cDD.innerHTML='<div class="city-loading">No cities found</div>';cDD.classList.add('open');return;}fCities.slice(0,12).forEach(function(c,i){var o=document.createElement('div');o.className='city-option'+(i===hIdx?' highlighted':'');o.innerHTML=c[0]+'<span class="city-country">'+c[1]+'</span>';o.setAttribute('data-idx',i);cDD.appendChild(o);});cDD.classList.add('open');}
+cDD.addEventListener('pointerdown',function(e){e.preventDefault();e.stopPropagation();ddM=true;});
+cDD.addEventListener('pointerup',function(e){e.preventDefault();e.stopPropagation();var o=e.target.closest('.city-option');if(o){var i=parseInt(o.getAttribute('data-idx'));if(fCities[i])selC(fCities[i]);}ddM=false;});
+cDD.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();});
+cI.addEventListener('blur',function(){if(ddM)return;setTimeout(function(){if(!ddM){cDD.classList.remove('open');cDD.innerHTML='';}},200);});
+cI.addEventListener('input',function(){var q=cI.value.trim().toLowerCase();if(q.length<1){cDD.classList.remove('open');return;}fCities=CITIES.map(function(c){var nm=c[0].toLowerCase(),co=c[1].toLowerCase(),f=nm+' '+co;var s=0;if(nm===q)s=100;else if(nm.startsWith(q))s=80;else if(f.startsWith(q))s=70;else if(nm.includes(q))s=50;else if(co.includes(q))s=30;else if(f.includes(q))s=20;return[c,s];}).filter(function(x){return x[1]>0;}).sort(function(a,b){return b[1]-a[1];}).map(function(x){return x[0];});hIdx=fCities.length>0?0:-1;rDD();});
+cI.addEventListener('keydown',function(e){if(!cDD.classList.contains('open'))return;var m=Math.min(fCities.length,12);if(e.key==='ArrowDown'){e.preventDefault();hIdx=(hIdx+1)%m;rDD();}else if(e.key==='ArrowUp'){e.preventDefault();hIdx=(hIdx-1+m)%m;rDD();}else if(e.key==='Enter'&&hIdx>=0){e.preventDefault();selC(fCities[hIdx]);}else if(e.key==='Escape')cDD.classList.remove('open');});
+cI.addEventListener('focus',function(){if(cI.value.trim().length>=1)cI.dispatchEvent(new Event('input'));});
+
+// ===== INIT SWISS EPHEMERIS =====
+const loadMsg=document.getElementById('loadingMsg');
+loadMsg.innerHTML='<div class="loading-msg">⏳ Loading Swiss Ephemeris engine (WebAssembly)...</div>';
+const swe=new SwissEph();
+await swe.initSwissEph();
+loadMsg.innerHTML='<div class="loading-msg">✅ Swiss Ephemeris ready — sub-arcsecond precision</div>';
+setTimeout(()=>loadMsg.innerHTML='',3000);
+
+// ===== COMPUTE POSITIONS =====
+function nn(a){a%=360;return a<0?a+360:a;}
+function compP(date){
+  var h=date.getUTCHours()+date.getUTCMinutes()/60+date.getUTCSeconds()/3600;
+  var jd=swe.julday(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate(),h);
+  var res={},spd={};
+  for(var nm in BODIES){var r=swe.calc_ut(jd,BODIES[nm],FLAGS);res[nm]=nn(r[0]);spd[nm]=r[3]||0;}
+  // South Node = opposite of North Node
+  res.SNode=nn(res.NNode+180);spd.SNode=spd.NNode;
+  return{pos:res,spd:spd};
+}
+function compH(date,lat,lon){
+  var h=date.getUTCHours()+date.getUTCMinutes()/60+date.getUTCSeconds()/3600;
+  var jd=swe.julday(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate(),h);
+  var r=swe.houses(jd,lat,lon,'P'); // Placidus
+  var houses=[];
+  for(var i=1;i<=12;i++)houses.push(r.cusps[i]);
+  return{asc:r.ascmc[0],mc:r.ascmc[1],houses:houses};
+}
+// Heliocentric for orrery: use helio flag
+function helioP(date){
+  var h=date.getUTCHours()+date.getUTCMinutes()/60+date.getUTCSeconds()/3600;
+  var jd=swe.julday(date.getUTCFullYear(),date.getUTCMonth()+1,date.getUTCDate(),h);
+  var HELIO=4|8; // MOSEPH | HELIO
+  var res={};
+  for(var nm in BODIES){
+    if(nm==='Sun'||nm==='Moon')continue;
+    try{var p=swe.calc_ut(jd,BODIES[nm],HELIO);res[nm]={lng:nn(p[0]),r:p[2]};}catch(e){res[nm]={lng:0,r:SEMI_A[nm]||1};}
+  }
+  // Earth = Sun + 180 in helio
+  var sun=swe.calc_ut(jd,0,FLAGS);
+  res.Earth={lng:nn(sun[0]+180),r:1.0};
+  return res;
+}
+function getH(lng,h){for(var i=0;i<12;i++){var s=h[i],e=h[(i+1)%12];if(s<e){if(lng>=s&&lng<e)return i+1;}else{if(lng>=s||lng<e)return i+1;}}return 1;}
+function fDg(lng){var si=Math.floor(nn(lng)/30),dd=nn(lng)-si*30,d=Math.floor(dd),m=Math.floor((dd-d)*60);return{sign:SIGNS[si],glyph:SG[si],deg:d,min:m,elem:EL[si]};}
+var AT=[{nm:'Conjunction',a:0,orb:8,s:'☌',pw:'major'},{nm:'Opposition',a:180,orb:8,s:'☍',pw:'major'},{nm:'Trine',a:120,orb:6,s:'△',pw:'major'},{nm:'Square',a:90,orb:6,s:'□',pw:'major'},{nm:'Sextile',a:60,orb:4,s:'⚹',pw:'minor'}];
+function findA(tp,np){var a=[];for(var t in tp)for(var n in np){var d=Math.abs(tp[t]-np[n]);d=d>180?360-d:d;for(var j=0;j<AT.length;j++){var asp=AT[j];var orb=Math.abs(d-asp.a);if(orb<=asp.orb)a.push({tp:t,np:n,asp:asp,orb:orb.toFixed(1),tD:tp[t],nD:np[n],ex:1-orb/asp.orb});}}return a.sort(function(a,b){return b.ex-a.ex});}
+function aM(tp,np,nm,tLng,nLng){
+  var tSign=SIGNS[Math.floor(nn(tLng)/30)],nSign=SIGNS[Math.floor(nn(nLng)/30)];
+  var g={conjunction:'Transit '+tp+' merges with natal '+np+' — activation & intensification of '+np+' themes',opposition:'Transit '+tp+' opposes natal '+np+' — awareness through tension, external mirrors',trine:'Transit '+tp+' flows with natal '+np+' — ease, gifts & natural leverage',square:'Transit '+tp+' challenges natal '+np+' — friction breeds growth, forced action',sextile:'Transit '+tp+' offers opportunity to natal '+np+' — gentle opening, opt-in growth'};
+  var base=g[nm.toLowerCase()]||tp+' aspects '+np;
+  var actor='Transit '+tp+' ('+(PK[tp]||'').split('·')[0].trim()+')';
+  var costume='wearing '+tSign+' energy ('+(ZK[tSign]||'').split('·')[0].trim()+')';
+  return base+'<div class="transit-formula">'+actor+' '+costume+'</div>';
+}
+// ===== DRAW BI-WHEEL =====
+function drawBW(cv,natal,transit,houses,nSpd,tSpd){
+  nSpd=nSpd||{};tSpd=tSpd||{};
+  var ctx=cv.getContext('2d'),W=cv.width,H=cv.height,cx=W/2,cy=H/2;
+  var RSO=W*.44,RSI=W*.385,RT=W*.335,RHO=W*.285,RN=W*.22,RHI=W*.155,RC=W*.10;
+  var asc=houses[0],mc=houses[9],dsc=nn(asc+180),ic=nn(mc+180);
+  ctx.clearRect(0,0,W,H);
+  var bg=ctx.createRadialGradient(cx,cy,RC,cx,cy,W*.48+30);bg.addColorStop(0,'#0d0f2b');bg.addColorStop(.5,'#080a1a');bg.addColorStop(1,'rgba(6,6,14,0)');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  // Quadrant-based mapping: ASC=180°(left), MC=90°(top), DSC=0°(right), IC=270°(bottom)
+  // Maps ecliptic longitude to canvas angle, interpolating within quadrants
+  function eclToCanvas(lng){
+    lng=nn(lng);
+    // Determine which quadrant this longitude falls in (ecliptic)
+    // Q1: ASC→IC (going forward in zodiac = houses 1,2,3) → canvas 180°→270° (left→bottom)
+    // Q2: IC→DSC (houses 4,5,6) → canvas 270°→360° (bottom→right)
+    // Q3: DSC→MC (houses 7,8,9) → canvas 0°→90° (right→top)
+    // Q4: MC→ASC (houses 10,11,12) → canvas 90°→180° (top→left)
+    var d1=nn(ic-asc),d2=nn(dsc-ic),d3=nn(mc-dsc),d4=nn(asc-mc);
+    var fromAsc=nn(lng-asc);
+    if(fromAsc<d1){return 180+90*(fromAsc/d1);}// Q1: left→bottom
+    else if(fromAsc<d1+d2){return 270+90*((fromAsc-d1)/d2);}// Q2: bottom→right
+    else if(fromAsc<d1+d2+d3){return 0+90*((fromAsc-d1-d2)/d3);}// Q3: right→top
+    else{return 90+90*((fromAsc-d1-d2-d3)/d4);}// Q4: top→left
+  }
+  function xy(deg,r){var a=eclToCanvas(deg)*Dg;return[cx+r*Math.cos(a),cy-r*Math.sin(a)];}
+  function circ(r,c,w){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle=c;ctx.lineWidth=w;ctx.stroke();}
+  // Sign band
+  for(var i=0;i<12;i++){
+    var sS=i*30,sE=(i+1)*30,steps=24;
+    ctx.beginPath();
+    for(var s=0;s<=steps;s++){var lng=nn(sS+(sE-sS)*s/steps),ca=eclToCanvas(lng)*Dg;var ox=cx+RSO*Math.cos(ca),oy=cy-RSO*Math.sin(ca);s===0?ctx.moveTo(ox,oy):ctx.lineTo(ox,oy);}
+    for(var s=steps;s>=0;s--){var lng=nn(sS+(sE-sS)*s/steps),ca=eclToCanvas(lng)*Dg;var ix=cx+RSI*Math.cos(ca),iy=cy-RSI*Math.sin(ca);ctx.lineTo(ix,iy);}
+    ctx.closePath();ctx.fillStyle=EB[EL[i]];ctx.fill();ctx.strokeStyle='rgba(212,165,74,.15)';ctx.lineWidth=1;ctx.stroke();
+    var p=xy(i*30+15,(RSO+RSI)/2);ctx.font='bold 40px serif';ctx.fillStyle=EC[EL[i]];ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(SG[i],p[0],p[1]);
+    var p2=xy(i*30+15,(RSO+RSI)/2+22);ctx.font='bold 12px "Space Mono",monospace';ctx.fillStyle=EC[EL[i]];ctx.fillText(SIGNS[i].substring(0,3).toUpperCase(),p2[0],p2[1]);
+  }
+  circ(RSO,'rgba(212,165,74,.4)',2.5);circ(RSI,'rgba(212,165,74,.3)',2);circ(RHO,'rgba(123,104,238,.25)',1.5);circ(RC,'rgba(212,165,74,.2)',1.5);
+  ctx.beginPath();ctx.arc(cx,cy,RT,0,Math.PI*2);ctx.strokeStyle='rgba(255,107,53,.12)';ctx.lineWidth=55;ctx.stroke();
+  circ(RT+27.5,'rgba(255,107,53,.25)',1);circ(RT-27.5,'rgba(255,107,53,.25)',1);
+  ctx.beginPath();ctx.arc(cx,cy,RN,0,Math.PI*2);ctx.strokeStyle='rgba(123,104,238,.10)';ctx.lineWidth=45;ctx.stroke();
+  circ(RN+22.5,'rgba(123,104,238,.25)',1);circ(RN-22.5,'rgba(123,104,238,.25)',1);
+  ctx.save();ctx.font='bold 13px "Space Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  // Place labels at fixed canvas positions (top-left area)
+  var tlAng=135*Dg;ctx.fillStyle='rgba(255,107,53,.7)';ctx.fillText('◀ TRANSIT (LIVE) ▶',cx+RT*Math.cos(tlAng),cy-RT*Math.sin(tlAng));
+  var nlAng=135*Dg;ctx.fillStyle='rgba(123,104,238,.7)';ctx.fillText('◀ NATAL (BIRTH) ▶',cx+RN*Math.cos(nlAng),cy-RN*Math.sin(nlAng));
+  ctx.restore();
+  // House lines
+  for(var i=0;i<12;i++){
+    var deg=houses[i],p1=xy(deg,RC),p2=xy(deg,RSI);var isA=(i===0||i===3||i===6||i===9);
+    ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.strokeStyle=isA?'rgba(212,165,74,.7)':'rgba(123,104,238,.2)';ctx.lineWidth=isA?3:1;ctx.stroke();
+    var next=houses[(i+1)%12];var diff=next-deg;if(diff<0)diff+=360;var mid=nn(deg+diff/2);
+    var hp=xy(mid,RHI);ctx.font='bold 28px "Cinzel",serif';ctx.fillStyle='rgba(212,165,74,.55)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(i+1),hp[0],hp[1]);
+    var lp=xy(mid,RHI+28);ctx.font='bold 10px "Space Mono",monospace';ctx.fillStyle='rgba(192,200,224,.35)';ctx.fillText(HN[i].split('&')[0].trim(),lp[0],lp[1]);
+  }
+  var labels=[['ASC',houses[0]],['IC',houses[3]],['DSC',houses[6]],['MC',houses[9]]];
+  for(var j=0;j<labels.length;j++){var lp=xy(labels[j][1],RSO+32);ctx.font='bold 18px "Space Mono",monospace';ctx.fillStyle='#d4a54a';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(labels[j][0],lp[0],lp[1]);}
+  // Aspects (togglable)
+  var showAspects=document.getElementById('aspectToggle')&&document.getElementById('aspectToggle').checked;
+  var aspects=findA(transit,natal);
+  if(showAspects){for(var j=0;j<Math.min(aspects.length,15);j++){var a=aspects[j];var p1=xy(a.tD,RT),p2=xy(a.nD,RN);var al=.06+.16*a.ex;var cols={Conjunction:'rgba(255,215,0,'+al+')',Opposition:'rgba(255,70,70,'+al+')',Trine:'rgba(70,200,130,'+al+')',Square:'rgba(255,70,70,'+al+')',Sextile:'rgba(100,149,237,'+al+')'};ctx.beginPath();ctx.moveTo(p1[0],p1[1]);ctx.lineTo(p2[0],p2[1]);ctx.strokeStyle=cols[a.asp.nm]||'rgba(255,255,255,'+al+')';ctx.lineWidth=a.asp.pw==='major'?1.5:.8;if(a.asp.nm==='Square'||a.asp.nm==='Opposition')ctx.setLineDash([6,4]);ctx.stroke();ctx.setLineDash([]);}}
+  // Natal planets
+  var nSlots=Object.keys(natal).map(function(nm){return{nm:nm,lng:natal[nm],dLng:natal[nm]};}).sort(function(a,b){return a.lng-b.lng;});
+  for(var i=1;i<nSlots.length;i++){var diff=nSlots[i].dLng-nSlots[i-1].dLng;if(diff<0)diff+=360;if(diff<9)nSlots[i].dLng=nn(nSlots[i-1].dLng+9);}
+  for(var i=0;i<nSlots.length;i++){
+    var p=nSlots[i],pp=xy(p.dLng,RN);
+    ctx.beginPath();ctx.arc(pp[0],pp[1],26,0,Math.PI*2);ctx.fillStyle=(NC[p.nm]||'#fff')+'30';ctx.fill();ctx.strokeStyle=(NC[p.nm]||'#fff')+'90';ctx.lineWidth=2;ctx.stroke();
+    ctx.font='bold 30px serif';ctx.fillStyle=NC[p.nm]||'#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(PG[p.nm]||'?',pp[0],pp[1]-1);
+    var rx=(nSpd[p.nm]||0)<0;var df=fDg(p.lng);
+    var lp=xy(p.dLng,RN-30);ctx.font='bold 11px "Space Mono",monospace';ctx.fillStyle=NC[p.nm]||'#fff';ctx.fillText(p.nm.toUpperCase()+' '+df.deg+'°'+(rx?' ℞':''),lp[0],lp[1]);
+    var t1=xy(p.lng,RHO),t2=xy(p.lng,RHO+8);ctx.beginPath();ctx.moveTo(t1[0],t1[1]);ctx.lineTo(t2[0],t2[1]);ctx.strokeStyle=(NC[p.nm]||'#fff')+'60';ctx.lineWidth=2;ctx.stroke();
+  }
+  // Transit planets
+  var tSlots=Object.keys(transit).map(function(nm){return{nm:nm,lng:transit[nm],dLng:transit[nm]};}).sort(function(a,b){return a.lng-b.lng;});
+  for(var i=1;i<tSlots.length;i++){var diff=tSlots[i].dLng-tSlots[i-1].dLng;if(diff<0)diff+=360;if(diff<9)tSlots[i].dLng=nn(tSlots[i-1].dLng+9);}
+  for(var i=0;i<tSlots.length;i++){
+    var p=tSlots[i],pp=xy(p.dLng,RT);
+    var glow=ctx.createRadialGradient(pp[0],pp[1],0,pp[0],pp[1],28);glow.addColorStop(0,(TC[p.nm]||'#fff')+'40');glow.addColorStop(1,'transparent');ctx.fillStyle=glow;ctx.fillRect(pp[0]-28,pp[1]-28,56,56);
+    ctx.beginPath();ctx.arc(pp[0],pp[1],24,0,Math.PI*2);ctx.fillStyle=(TC[p.nm]||'#fff')+'20';ctx.fill();ctx.strokeStyle=(TC[p.nm]||'#fff')+'80';ctx.lineWidth=2;ctx.stroke();
+    ctx.font='bold 28px serif';ctx.fillStyle=TC[p.nm]||'#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(PG[p.nm]||'?',pp[0],pp[1]-1);
+    var rx=(tSpd[p.nm]||0)<0;var df=fDg(p.lng);
+    var lp=xy(p.dLng,RT+28);ctx.font='bold 11px "Space Mono",monospace';ctx.fillStyle=TC[p.nm]||'#fff';ctx.fillText(p.nm.toUpperCase()+' '+df.deg+'°'+(rx?' ℞':''),lp[0],lp[1]);
+    var t1=xy(p.lng,RSI),t2=xy(p.lng,RSI-8);ctx.beginPath();ctx.moveTo(t1[0],t1[1]);ctx.lineTo(t2[0],t2[1]);ctx.strokeStyle=(TC[p.nm]||'#fff')+'60';ctx.lineWidth=2;ctx.stroke();
+  }
+  // Center
+  var cg=ctx.createRadialGradient(cx,cy,0,cx,cy,RC);cg.addColorStop(0,'#0d0f2b');cg.addColorStop(1,'rgba(6,6,14,.9)');ctx.fillStyle=cg;ctx.beginPath();ctx.arc(cx,cy,RC,0,Math.PI*2);ctx.fill();
+  ctx.font='bold 14px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.8)';ctx.textAlign='center';ctx.fillText('NATAL × TRANSIT',cx,cy-8);
+  ctx.font='11px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.5)';ctx.fillText('PLACIDUS',cx,cy+10);
+}
+// ===== ORRERY =====
+function drawOrr(cv,date){
+  var ctx=cv.getContext('2d'),W=cv.width,H=cv.height,cx=W/2,cy=H/2;
+  ctx.clearRect(0,0,W,H);
+  var bg=ctx.createRadialGradient(cx,cy,0,cx,cy,W/2);bg.addColorStop(0,'#0d0f2b');bg.addColorStop(1,'rgba(6,6,14,0)');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+  var pos=helioP(date);
+  var orbitR={Mercury:W*.06,Venus:W*.10,Earth:W*.14,Mars:W*.19,Jupiter:W*.26,Saturn:W*.32,Uranus:W*.38,Neptune:W*.43,Pluto:W*.47};
+  var pOrder=['Mercury','Venus','Earth','Mars','Jupiter','Saturn','Uranus','Neptune','Pluto'];
+  var pCol={Mercury:'#B0B0B0',Venus:'#FFD700',Earth:'#4a8ae8',Mars:'#e8524a',Jupiter:'#DEB887',Saturn:'#C0A060',Uranus:'#00CED1',Neptune:'#6495ED',Pluto:'#BA55D3'};
+  var pSz={Mercury:5,Venus:7,Earth:8,Mars:6,Jupiter:14,Saturn:12,Uranus:9,Neptune:9,Pluto:5};
+  // Sun
+  var sg=ctx.createRadialGradient(cx,cy,0,cx,cy,50);sg.addColorStop(0,'#FFD700');sg.addColorStop(.3,'rgba(255,165,0,.6)');sg.addColorStop(1,'transparent');ctx.fillStyle=sg;ctx.fillRect(cx-50,cy-50,100,100);
+  ctx.beginPath();ctx.arc(cx,cy,16,0,Math.PI*2);ctx.fillStyle='#FFD700';ctx.fill();
+  ctx.font='bold 18px serif';ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('☉',cx,cy);
+  ctx.font='bold 10px "Space Mono",monospace';ctx.fillStyle='#FFD700';ctx.fillText('SUN',cx,cy+26);
+  for(var j=0;j<pOrder.length;j++){
+    var nm=pOrder[j],p=pos[nm];if(!p)continue;
+    var ringR=orbitR[nm];
+    ctx.beginPath();ctx.arc(cx,cy,ringR,0,Math.PI*2);
+    if(j>=4)ctx.setLineDash([4,6]);else ctx.setLineDash([]);
+    ctx.strokeStyle=j<4?'rgba(255,255,255,.15)':'rgba(255,255,255,.08)';ctx.lineWidth=1;ctx.stroke();ctx.setLineDash([]);
+    ctx.font='9px "Space Mono",monospace';ctx.fillStyle='rgba(255,255,255,.2)';ctx.textAlign='left';
+    ctx.fillText(nm==='Earth'?'Earth (You)':nm,cx+ringR+5,cy+3);
+    if(nm!=='Earth'){ctx.font='8px "Space Mono",monospace';ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillText((SEMI_A[nm]||0).toFixed(1)+' AU',cx+ringR+5,cy+13);}
+    var ang=p.lng*Dg,px=cx+ringR*Math.cos(ang),py=cy-ringR*Math.sin(ang);
+    var sz=pSz[nm]||5,col=pCol[nm]||'#fff';
+    var glow=ctx.createRadialGradient(px,py,0,px,py,sz*3.5);glow.addColorStop(0,col+'50');glow.addColorStop(1,'transparent');ctx.fillStyle=glow;ctx.fillRect(px-sz*4,py-sz*4,sz*8,sz*8);
+    ctx.beginPath();ctx.arc(px,py,sz,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle=col+'80';ctx.lineWidth=1.5;ctx.stroke();
+    if(nm==='Saturn'){ctx.beginPath();ctx.ellipse(px,py,sz*2.2,sz*.6,ang,0,Math.PI*2);ctx.strokeStyle='#C0A06080';ctx.lineWidth=1.5;ctx.stroke();}
+    ctx.font='bold 12px "Space Mono",monospace';ctx.fillStyle=col;ctx.textAlign='center';
+    var lY=py-sz-10;if(lY<20)lY=py+sz+16;
+    ctx.fillText((nm==='Earth'?'⊕':(PG[nm]||''))+' '+nm,px,lY);
+    var signIdx=Math.floor(nn(p.lng)/30);
+    ctx.font='9px "Space Mono",monospace';ctx.fillStyle=col+'AA';
+    ctx.fillText(SG[signIdx]+' '+Math.floor(nn(p.lng)-signIdx*30)+'°',px,lY+13);
+  }
+  ctx.font='bold 12px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.7)';ctx.textAlign='center';
+  ctx.fillText('LIVE SOLAR SYSTEM — HELIOCENTRIC VIEW (SWISS EPHEMERIS)',cx,25);
+  ctx.font='10px "Space Mono",monospace';ctx.fillStyle='rgba(212,165,74,.4)';
+  ctx.fillText('Each ring = one planet orbit · Positions are real · '+new Date().toLocaleDateString(),cx,H-15);
+}
+
+// ===== UI =====
+var natalPositions,natalSpeeds,natalHouseData,transitSpeeds={};
+function popList(id,positions,speeds,colors){var el=document.getElementById(id);el.innerHTML='';for(var nm in positions){var f=fDg(positions[nm]);var rx=(speeds[nm]||0)<0;var row=document.createElement('div');row.className='planet-row';row.innerHTML='<span class="planet-symbol" style="color:'+colors[nm]+'">'+(PG[nm]||'')+(rx?' <span class="rx">Rx</span>':'')+'</span><span class="planet-name">'+nm+'<span class="planet-kw">'+(PK[nm]||'')+'</span></span><span class="planet-sign">'+f.glyph+' '+f.sign+'<span class="sign-kw">'+(ZK[f.sign]||'')+'</span></span><span class="planet-degree">'+f.deg+'°'+String(f.min).padStart(2,'0')+"'"+(rx?' ℞':'')+'</span>';el.appendChild(row);}}
+function popMansion(transit,houses){var grid=document.getElementById('mansionGrid');grid.innerHTML='';var hg={};for(var i=1;i<=12;i++)hg[i]=[];for(var nm in transit)hg[getH(transit[nm],houses)].push({nm:nm,g:PG[nm],c:TC[nm]});for(var i=1;i<=12;i++){var c=document.createElement('div');c.className='room-card'+(hg[i].length>0?' active':'');var guests=hg[i].map(function(g){return'<span style="color:'+g.c+';margin:0 3px" title="'+g.nm+(PK[g.nm]?' — '+PK[g.nm]:'')+'">'+g.g+'</span>';}).join('');c.innerHTML='<div class="room-number">'+String(i).padStart(2,'0')+'</div><div class="room-name">'+HN[i-1]+'</div><div class="room-tags">'+HX[i-1]+'</div><div class="room-guests">'+guests+'</div>'+(hg[i].length?'<div class="room-guest-label">'+hg[i].map(function(g){return g.nm;}).join(', ')+'</div>':'');grid.appendChild(c);}}
+function popTransits(transit,natal,houses){var grid=document.getElementById('transitGrid');grid.innerHTML='';var aspects=findA(transit,natal);if(!aspects.length){grid.innerHTML='<p style="text-align:center;color:var(--silver-dim);grid-column:1/-1">No major transit aspects active.</p>';return;}for(var j=0;j<Math.min(aspects.length,15);j++){var a=aspects[j],f=fDg(a.tD),h=getH(a.tD,houses);var c=document.createElement('div');c.className='transit-card '+f.elem+(a.asp.pw==='major'?' major':'');c.innerHTML='<div class="transit-header"><span class="transit-title">'+(PG[a.tp]||'')+' '+a.tp+' '+a.asp.s+' '+(PG[a.np]||'')+' '+a.np+'</span><span class="transit-aspect">'+a.asp.nm+' · '+a.orb+'° orb</span></div><div class="transit-drives"><span class="drive-tag t">'+a.tp+': '+(PK[a.tp]||'').split('·').slice(0,3).join('·')+'</span><span class="drive-tag n">'+a.np+': '+(PK[a.np]||'').split('·').slice(0,3).join('·')+'</span></div><div class="transit-body">'+aM(a.tp,a.np,a.asp.nm,a.tD,a.nD)+'</div><div class="transit-house">House '+h+' · '+HN[h-1]+' · Exactness: '+Math.round(a.ex*100)+'%</div>';grid.appendChild(c);}}
+function updateClock(){document.getElementById('liveTime').textContent=new Date().toUTCString().slice(0,-4)+' UTC';}
+function renderAll(){var now=new Date(),tp=compP(now);transitSpeeds=tp.spd;drawBW(document.getElementById('biWheelCanvas'),natalPositions,tp.pos,natalHouseData.houses,natalSpeeds,tp.spd);drawOrr(document.getElementById('orreryCanvas'),now);popList('transitList',tp.pos,tp.spd,TC);popMansion(tp.pos,natalHouseData.houses);popTransits(tp.pos,natalPositions,natalHouseData.houses);updateClock();}
+
+document.getElementById('btnGenerate').addEventListener('click',function(){
+  var ds=document.getElementById('birthDate').value,ts=document.getElementById('birthTime').value;
+  var lat=parseFloat(bLat.value),lon=parseFloat(bLon.value);
+  if(!ds)return alert('Please enter your birth date');
+  var parts=ds.split('-').map(Number),tp=(ts||'12:00').split(':').map(Number);
+  var natalDate=new Date(Date.UTC(parts[0],parts[1]-1,parts[2],tp[0],tp[1]));
+  document.getElementById('natalDate').textContent=natalDate.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric',timeZone:'UTC'});
+  var nData=compP(natalDate);natalPositions=nData.pos;natalSpeeds=nData.spd;natalHouseData=compH(natalDate,lat,lon);
+  popList('natalList',natalPositions,natalSpeeds,NC);
+  document.getElementById('mainContent').classList.add('visible');
+  document.getElementById('hero').style.minHeight='auto';document.getElementById('hero').style.paddingTop='3rem';
+  renderAll();setInterval(renderAll,60000);
+  setTimeout(function(){document.getElementById('mainContent').scrollIntoView({behavior:'smooth'});},200);
+});
+setInterval(function(){
+  if(!natalHouseData)return;
+  var now=new Date();
+  var h=now.getUTCHours()+now.getUTCMinutes()/60+now.getUTCSeconds()/3600;
+  var jd=swe.julday(now.getUTCFullYear(),now.getUTCMonth()+1,now.getUTCDate(),h);
+  var lst=swe.sidtime(jd);
+  var hh=Math.floor(lst),mm=Math.floor((lst-hh)*60),ss=Math.floor(((lst-hh)*60-mm)*60);
+  document.getElementById('siderealTime').textContent=String(hh).padStart(2,'0')+'h '+String(mm).padStart(2,'0')+'m '+String(ss).padStart(2,'0')+'s';
+},1000);
+setInterval(updateClock,1000);updateClock();
+document.getElementById('aspectToggle').addEventListener('change',function(){if(natalHouseData)renderAll();});
+</script>
+</body>
+</html>
